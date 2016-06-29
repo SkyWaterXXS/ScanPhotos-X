@@ -5,6 +5,9 @@
 版本：v1.0.0
 时间：2015-11
 说明：想显示那部分的图片，指定target即可 例：body .class #id
+版本：v1.1.0
+时间：2016-06
+说明：优化了处理的算法，修改部分样式
 */
 
 (function ($) {
@@ -13,7 +16,7 @@
         var photos = [];
         //当前显示的图片index
         var showindex = 0;
-        //当前是否可操作
+        //当前是否可操作【当存在多个实例时,用于区分当前在操作的实例】
         var canOprate = false;
 
         var defaults = {
@@ -30,26 +33,30 @@
             }
         };
         var options = $.extend(defaults, options);
-        $(document.body).css("overflow", "hidden");
+
         if ($("#UIPhotos_ID").length <= 0) {
             $(document.body).append("<div class=\"UIPhotos\" id=\"UIPhotos_ID\">\
                                         <div class=\"UIPhotos-head\">\
                                             <div class=\"UIPhotos-counter\"></div>\
-                                            <button id=\"UIPhotos-clockwise\" class=\"UIPhotos-buttonC\">\
-                                                <span class=\"glyphicon glyphicon-retweet\" aria-hidden=\"true\"></span>\
-                                            </button>\
-                                            <button id=\"UIPhotos-anticlockwise\" class=\"UIPhotos-buttonC UIPhotos-buttonC-anti\">\
-                                                <span class=\"glyphicon glyphicon-retweet\" aria-hidden=\"true\"></span>\
-                                            </button>\
-                                            <button id=\"UIPhotos-close\" class=\"UIPhotos-buttonR\">\
-                                                <span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span>\
-                                            </button>\
-                                            <a id=\"UIPhotos-download\" class=\"UIPhotos-buttonR\" href=\"null\" target=\"_blank\" download=\"\">\
-                                                <span class=\"glyphicon glyphicon-save\" aria-hidden=\"true\"></span>\
-                                            </a>\
-                                            <button id=\"UIPhotos-fullScreen\" class=\"UIPhotos-buttonR\">\
-                                                <span class=\"glyphicon glyphicon-fullscreen\" aria-hidden=\"true\"></span>\
-                                            </button>\
+                                            <div class=\"UIPhotos-wise\">\
+                                                <button id=\"UIPhotos-clockwise\" class=\"UIPhotos-buttonC\">\
+                                                    <span class=\"glyphicon glyphicon-retweet\" aria-hidden=\"true\"></span>\
+                                                </button>\
+                                                <button id=\"UIPhotos-anticlockwise\" class=\"UIPhotos-buttonC UIPhotos-buttonC-anti\">\
+                                                    <span class=\"glyphicon glyphicon-retweet\" aria-hidden=\"true\"></span>\
+                                                </button>\
+                                            </div>\
+                                            <div class=\"UIPhotos-tool\">\
+                                                <button id=\"UIPhotos-close\" class=\"UIPhotos-buttonR\">\
+                                                    <span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span>\
+                                                </button>\
+                                                <a id=\"UIPhotos-download\" class=\"UIPhotos-buttonR\" href=\"null\" target=\"_blank\" download=\"\">\
+                                                    <span class=\"glyphicon glyphicon-save\" aria-hidden=\"true\"></span>\
+                                                </a>\
+                                                <button id=\"UIPhotos-fullScreen\" class=\"UIPhotos-buttonR\">\
+                                                    <span class=\"glyphicon glyphicon-fullscreen\" aria-hidden=\"true\"></span>\
+                                                </button>\
+                                            </div>\
                                         </div>\
                                         <div class=\"UIPhotos-content\">\
                                             <button class=\"UIPhotos-buttonLeft\">\
@@ -119,7 +126,7 @@
         });
 
 
-
+        //扫描目标图片并绑定事件
         $(options.target).find("img[class!='UIPhotos-img']").each(function () {
             var img = {};
             img.src = $(this).attr("data-src") || $(this).attr("src");
@@ -129,7 +136,7 @@
             $(this).attr("data-index", (photos.length - 1));
             $(this).css("cursor", "pointer");
             $(this).click(function () {
-
+                $(document.body).css("overflow", "hidden");
                 showindex = parseInt($(this).attr("data-index"));
                 showPhotos();
                 show();
@@ -147,7 +154,7 @@
         var height;
         var top;
         var left;
-
+        //图片显示算法
         function show() {
             $(".UIPhotos-counter").html("" + (showindex + 1) + "/" + photos.length + "");
 
@@ -158,27 +165,40 @@
                 //原始宽度           
                 imgWidth = this.width;
                 //原始高度
-                imgHeight = this.height
+                imgHeight = this.height;
+                //记录原始图片高度和宽度
+                photos[showindex].originalWidth = this.width.toString().replace("px", "");
+                photos[showindex].originalHeight = this.height.toString().replace("px", "");
 
                 $(".UIPhotos-img").attr({
                     "src": photos[showindex].src
                 });
-
+                //容器宽度
                 var contentWidth = $(".UIPhotos-content").width();
+                //容器高度
                 var contentHeight = $(".UIPhotos-content").height();
-
+                //当图片高度<容器高度 && 图片宽度<容器宽度  图片显示原始大小
                 if (imgHeight <= contentHeight && imgWidth <= contentWidth) {
                     width = imgWidth;
                     height = imgHeight;
-                } else if (imgHeight > contentHeight && imgWidth <= contentWidth) {
+                }//当图片高度>容器高度 &&图片宽度<=容器宽度 图片高度为容器高度 等比例缩小
+                else if (imgHeight > contentHeight && imgWidth <= contentWidth) {
                     height = contentHeight;
                     width = imgWidth / imgHeight * height;
-                } else if (imgHeight <= contentHeight && imgWidth > contentWidth) {
+                }//当图片高度<=容器高度 &&图片宽度>容器宽度 图片宽度为容器宽度 等比例缩小
+                else if (imgHeight <= contentHeight && imgWidth > contentWidth) {
                     width = contentWidth;
                     height = imgHeight / imgWidth * width;
-                } else {
+                }//当图片高度>容器高度 &&图片宽度>容器宽度
+                else {
+                    //首先图片高度为容器高度 等比例缩小
                     height = contentHeight;
                     width = imgWidth / imgHeight * height;
+                    //如果图片宽度>容器宽度 图片宽度为容器宽度 等比例缩小
+                    if (width > contentWidth) {
+                        width = contentWidth;
+                        height = imgHeight / imgWidth * width;
+                    }
                 }
 
                 left = getLeft(width);
@@ -206,29 +226,82 @@
             return (contentHeight - height) / 2;
         };
 
-        //放大缩小
+        //放大缩小算法
         $(".UIPhotos-content").mousewheel(function (event, delta) {
-            var oldTop = $(".UIPhotos-img").css("top").replace("px", "");
-            var oldLeft = $(".UIPhotos-img").css("left").replace("px", "");
-            var oldHeight = $(".UIPhotos-img").css("height").replace("px", "");
-            var oldWidth = $(".UIPhotos-img").css("width").replace("px", "");
+            if (canOprate) {
+                var oldTop = $(".UIPhotos-img").css("top").replace("px", "");
+                var oldLeft = $(".UIPhotos-img").css("left").replace("px", "");
+                var oldHeight = $(".UIPhotos-img").css("height").replace("px", "");
+                var oldWidth = $(".UIPhotos-img").css("width").replace("px", "");
+                //当图片太大或太小时 不再进行放大缩小处理
+                if ((oldHeight < 34 && delta < 0)
+                    || (oldWidth < 34 && delta < 0)) { }
+                else if ((photos[showindex].originalWidth <= 1700 && photos[showindex].originalHeight <= 1700 && oldWidth > 3400 && delta > 0)
+                    || (photos[showindex].originalWidth <= 1700 && photos[showindex].originalHeight <= 1700 && oldHeight > 3400 && delta > 0)) { }
+                else if ((photos[showindex].originalWidth > 1700 || photos[showindex].originalHeight > 1700)
+                    && (oldWidth > 2 * photos[showindex].originalWidth
+                    || oldHeight > 2 * photos[showindex].originalHeight) && delta > 0) { }
+                else {
+                    var newHeight = parseFloat(oldHeight) * (1 + parseFloat(delta) / 20);
+                    var newWidth = parseFloat(oldWidth) * (1 + parseFloat(delta) / 20);
 
-            if ((oldHeight < 34 && delta < 0)
-                || (oldWidth < 34 && delta < 0)
-                || (oldHeight > 3400 && delta > 0)
-                || (oldWidth > 3400 && delta > 0)
-               ) { } else {
-                var newHeight = parseFloat(oldHeight) * (1 + parseFloat(delta) / 20);
-                var newWidth = parseFloat(oldWidth) * (1 + parseFloat(delta) / 20);
-                var newTop = parseFloat(oldTop) - (newHeight - parseFloat(oldHeight)) / 2;
-                var newLeft = parseFloat(oldLeft) - (newWidth - parseFloat(oldWidth)) / 2;
+                    var newTop;
+                    var newLeft;
+                    //缩小图片时计算边界距离 防止图片跑到容器外面
+                    if (delta < 0) {
+                        //容器宽度
+                        var contentWidth = $(".UIPhotos-content").width();
+                        //容器高度
+                        var contentHeight = $(".UIPhotos-content").height();
+                        //右上角判断
+                        if ((contentWidth - parseFloat(oldLeft) <= 17) && (parseFloat(oldTop) + newHeight <= 17 + 44)) {
+                            newTop = -newHeight + 44 + 17;
+                            newLeft = contentWidth - 17;
+                        }//左上角判断
+                        else if ((parseFloat(oldLeft) + newWidth <= 17) && (parseFloat(oldTop) + newHeight <= 17 + 44)) {
+                            newTop = -newHeight + 44 + 17;
+                            newLeft = -newWidth + 17;
+                        }//左下角判断
+                        else if ((parseFloat(oldLeft) + newWidth <= 17) && (contentHeight - parseFloat(oldTop) - 44 <= 17)) {
+                            newTop = contentHeight - 44 - 17;
+                            newLeft = -newWidth + 17;
+                        }//右下角判断
+                        else if ((contentWidth - parseFloat(oldLeft) <= 17) && (contentHeight - parseFloat(oldTop) - 44 <= 17)) {
+                            newTop = contentHeight - 44 - 17;
+                            newLeft = contentWidth - 17;
+                        }//右边判断
+                        else if (contentWidth - parseFloat(oldLeft) <= 17) {
+                            newTop = parseFloat(oldTop) - (newHeight - parseFloat(oldHeight)) / 2;
+                            newLeft = contentWidth - 17;
+                        }//左边判断
+                        else if (parseFloat(oldLeft) + newWidth <= 17) {
+                            newTop = parseFloat(oldTop) - (newHeight - parseFloat(oldHeight)) / 2;
+                            newLeft = -newWidth + 17;
+                        }//上边判断
+                        else if (parseFloat(oldTop) + newHeight <= 17 + 44) {
+                            newTop = -newHeight + 44 + 17;
+                            newLeft = parseFloat(oldLeft) - (newWidth - parseFloat(oldWidth)) / 2;
+                        }//下边判断
+                        else if (contentHeight - parseFloat(oldTop) - 44 <= 17) {
+                            newTop = contentHeight - 44 - 17;
+                            newLeft = parseFloat(oldLeft) - (newWidth - parseFloat(oldWidth)) / 2;
+                        }
+                        else {
+                            newTop = parseFloat(oldTop) - (newHeight - parseFloat(oldHeight)) / 2;
+                            newLeft = parseFloat(oldLeft) - (newWidth - parseFloat(oldWidth)) / 2;
+                        }
 
-                $(".UIPhotos-img").css({
-                    "top": newTop + "px",
-                    "left": newLeft + "px",
-                    "height": newHeight + "px",
-                    "width": newWidth + "px"
-                });
+                    } else {
+                        newTop = parseFloat(oldTop) - (newHeight - parseFloat(oldHeight)) / 2;
+                        newLeft = parseFloat(oldLeft) - (newWidth - parseFloat(oldWidth)) / 2;
+                    }
+                    $(".UIPhotos-img").css({
+                        "top": newTop + "px",
+                        "left": newLeft + "px",
+                        "height": newHeight + "px",
+                        "width": newWidth + "px"
+                    });
+                }
             }
         });
 
@@ -329,12 +402,13 @@
 
             var imgHeight = parseFloat($(".UIPhotos-img").css("height").replace("px", ""));
             var imgWidth = parseFloat($(".UIPhotos-img").css("width").replace("px", ""));
-            if ((mxy1.x - by.x) < (-imgWidth / 2)
-                || (mxy1.x - by.x) > (contentWidth - imgWidth / 2)
-                || (mxy1.y - by.y) < (-imgHeight / 2 + 44)
-                || (mxy1.y - by.y) > (contentHeight - imgHeight / 2)
-               )
-            { } else {
+            if ((mxy1.x - by.x) < (-imgWidth + 34)
+                || (mxy1.x - by.x) > (contentWidth - 34)
+                || (mxy1.y - by.y) < (-imgHeight + 34 + 44)
+                || (mxy1.y - by.y) > (contentHeight - 34)
+               ) { }
+            else
+            {
                 $(".UIPhotos-img").css("left", "" + (mxy1.x - by.x) + "px");
                 $(".UIPhotos-img").css("top", "" + (mxy1.y - by.y) + "px");
             }
@@ -378,7 +452,7 @@
                                     document.msFullscreenElement;
             return fullscreenEnabled;
         }
-
+        //全屏切换
         $("#UIPhotos-fullScreen").click(function () {
             if (canOprate) {
 
@@ -392,12 +466,15 @@
                 }
             }
         });
+        //关闭窗口
         $("#UIPhotos-close").click(function () {
+            $(document.body).css("overflow", "auto");
             canOprate = false;
             exitFullScreen();
             $("#UIPhotos_ID").css("display", "none");
             $(document.body).css("overflow", "auto");
         });
+
         //消除浏览器对图片拖拽打开新标签的方法
         for (i in document.images) document.images[i].ondragstart = imgdragstart;
     }

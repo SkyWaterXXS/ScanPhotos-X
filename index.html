@@ -17,14 +17,24 @@
          <img src="imgs/Koala.jpg" width="200" height="300" data-src="imgs/Koala.jpg" />
     </div>
        
-
+      <div class="xxs2">
+      
+       
+         <img src="imgs/Desert.jpg" width="200" height="300" data-src="imgs/Desert.jpg" />
+          <img src="imgs/bigone.png" width="200" height="300" data-src="imgs/bigone.png" />
+    </div>
     <script src="js/jquery.min.js"></script>
     <script src="js/jquery.mousewheel.min.js"></script>
     <script src="js/Test-Photo.js"></script>
 
     <script>
         $(function () {
-            $.fn.Photos();
+            $.fn.Photos({
+                target: ".xxs"
+            });
+            $.fn.Photos({
+                target: ".xxs2"
+            });
             
         })
 
