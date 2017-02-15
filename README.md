@@ -1,5 +1,5 @@
 # ScanPhotos-X X图片浏览器
-JavaScript image gallery for mobile and desktop.
+JavaScript image gallery for mobile and desktop.[Demo 演示地址](http://skywaterxxs.github.io/ScanPhotos-X/demo.html)
 ## Features 特点
 ###1:自动扫描加载图片
 支持网页上图片的自动扫描加载，支持body内所有图片或者指定区域内所有图片的自动扫描加载。
