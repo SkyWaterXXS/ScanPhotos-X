@@ -212,6 +212,12 @@
                 });
                 clearWise();
             }
+            img.onerror =function(){
+                $(".UIPhotos-img").attr({
+                    "src": photos[showindex].src
+                });
+                clearWise();
+            };
             img.src = photos[showindex].src;
 
             $("#UIPhotos-download").attr("href", img.src);
